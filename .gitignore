@@ -9,6 +9,10 @@ out/
 
 # Electron builder
 build/
+assets/icon.iconset/
+assets/icon.icns
+assets/icon.ico
+assets/icon.png
 
 # Vite
 .vite/
