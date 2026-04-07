@@ -1,0 +1,26 @@
+{
+  "pollIntervalSeconds": 30,
+  "clusters": [
+    {
+      "name": "Production US-East",
+      "context": "prod-us-east",
+      "kubeconfig": "~/.kube/config",
+      "namespaces": ["default", "backend", "frontend"],
+      "tags": ["production", "us-east"]
+    },
+    {
+      "name": "Production EU-West",
+      "context": "prod-eu-west",
+      "kubeconfig": "~/.kube/config",
+      "namespaces": ["default", "backend", "frontend"],
+      "tags": ["production", "eu-west"]
+    },
+    {
+      "name": "Staging",
+      "context": "staging",
+      "kubeconfig": "~/.kube/config",
+      "namespaces": ["default"],
+      "tags": ["staging"]
+    }
+  ]
+}
