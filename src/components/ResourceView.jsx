@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from './Toast';
+
+function copy(text) {
+  navigator.clipboard.writeText(text).then(() => toast(`Copied: ${text}`, 'success'));
+}
 
 const FETCHERS = {
   pods: (c, ns) => window.kubeApi.getPods(c, ns),
@@ -82,31 +87,23 @@ function renderTable(type, data, onViewLogs, onDescribe, cluster) {
         <thead><tr><th>Name</th><th>Namespace</th><th>Status</th><th>Ready</th><th>Restarts</th><th>Node</th><th>Age</th><th>Actions</th></tr></thead>
         <tbody>{data.map((p, i) => (
           <tr key={i} className={p.phase !== 'Running' && p.phase !== 'Succeeded' ? 'row-warn' : ''}>
-            <td className="mono">{p.name}</td><td>{p.namespace}</td>
+            <td className="mono" title={p.name} style={{cursor:'pointer'}} onClick={() => copy(p.name)}>{p.name}</td>
+            <td>{p.namespace}</td>
             <td><span className={`phase-tag phase-${p.phase?.toLowerCase()}`}>{p.phase}</span></td>
             <td>{p.ready}</td>
-            <td className={p.restarts > 5 ? 'text-warn' : ''}>{p.restarts}</td>
+            <td className={p.restarts > 5 ? 'text-warn' : p.restarts > 0 ? '' : ''}>{p.restarts}</td>
             <td className="mono">{p.node}</td><td>{timeAgo(p.age)}</td>
             <td className="actions">
               <button className="btn-sm" onClick={() => onViewLogs({ namespace: p.namespace, pod: p.name, containers: p.containers })}>Logs</button>
               <button className="btn-sm" onClick={() => onDescribe({ kind: 'pod', namespace: p.namespace, name: p.name })}>Describe</button>
+              <button className="btn-sm" title="Copy name" onClick={() => copy(p.name)}>⎘</button>
             </td>
           </tr>
         ))}</tbody>
       </table>
     );
     case 'deployments': return (
-      <table className="data-table">
-        <thead><tr><th>Name</th><th>Namespace</th><th>Ready</th><th>Updated</th><th>Available</th><th>Strategy</th><th>Age</th><th></th></tr></thead>
-        <tbody>{data.map((d, i) => (
-          <tr key={i} className={d.ready < d.replicas ? 'row-warn' : ''}>
-            <td className="mono">{d.name}</td><td>{d.namespace}</td>
-            <td>{d.ready}/{d.replicas}</td><td>{d.updated}</td><td>{d.available}</td>
-            <td>{d.strategy}</td><td>{timeAgo(d.age)}</td>
-            <td><button className="btn-sm" onClick={() => onDescribe({ kind: 'deployment', namespace: d.namespace, name: d.name })}>Describe</button></td>
-          </tr>
-        ))}</tbody>
-      </table>
+      <DeploymentTable data={data} onDescribe={onDescribe} cluster={cluster} />
     );
     case 'services': return (
       <table className="data-table">
@@ -227,4 +224,59 @@ function timeAgo(d) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
   return `${Math.floor(h / 24)}d`;
+}
+
+function DeploymentTable({ data, onDescribe, cluster }) {
+  const [scaleTarget, setScaleTarget] = useState(null);
+  const [scaleVal, setScaleVal] = useState(1);
+
+  const handleRestart = async (d) => {
+    const res = await window.kubeApi.restartDeployment(cluster, d.namespace, d.name);
+    if (res.error) toast(`Restart failed: ${res.error}`, 'error');
+    else toast(`Restarted ${d.name}`, 'success');
+  };
+
+  const handleScale = async () => {
+    const res = await window.kubeApi.scaleDeployment(cluster, scaleTarget.namespace, scaleTarget.name, scaleVal);
+    if (res.error) toast(`Scale failed: ${res.error}`, 'error');
+    else toast(`Scaled ${scaleTarget.name} to ${scaleVal}`, 'success');
+    setScaleTarget(null);
+  };
+
+  return (
+    <>
+      {scaleTarget && (
+        <div className="modal-overlay" onMouseDown={() => setScaleTarget(null)}>
+          <div className="modal" onMouseDown={e => e.stopPropagation()}>
+            <h3>Scale: {scaleTarget.name}</h3>
+            <div className="modal-field">
+              <label>Replicas</label>
+              <input type="number" min="0" max="50" value={scaleVal}
+                onChange={e => setScaleVal(e.target.value)} autoFocus />
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setScaleTarget(null)}>Cancel</button>
+              <button className="btn-primary" onClick={handleScale}>Scale</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <table className="data-table">
+        <thead><tr><th>Name</th><th>Namespace</th><th>Ready</th><th>Updated</th><th>Available</th><th>Strategy</th><th>Age</th><th>Actions</th></tr></thead>
+        <tbody>{data.map((d, i) => (
+          <tr key={i} className={d.ready < d.replicas ? 'row-warn' : ''}>
+            <td className="mono">{d.name}</td><td>{d.namespace}</td>
+            <td>{d.ready}/{d.replicas}</td><td>{d.updated}</td><td>{d.available}</td>
+            <td>{d.strategy}</td><td>{timeAgo(d.age)}</td>
+            <td className="actions">
+              <button className="btn-sm" onClick={() => onDescribe({ kind: 'deployment', namespace: d.namespace, name: d.name })}>Describe</button>
+              <button className="btn-sm success" onClick={() => { setScaleTarget(d); setScaleVal(d.replicas); }}>Scale</button>
+              <button className="btn-sm warn" onClick={() => handleRestart(d)}>Restart</button>
+              <button className="btn-sm" onClick={() => copy(d.name)}>⎘</button>
+            </td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </>
+  );
 }

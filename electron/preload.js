@@ -35,5 +35,11 @@ contextBridge.exposeInMainWorld('kubeApi', {
 
   // Describe
   describeResource: (cluster, kind, ns, name) =>
-    ipcRenderer.invoke('describe-resource', cluster, kind, ns, name)
+    ipcRenderer.invoke('describe-resource', cluster, kind, ns, name),
+
+  // Actions
+  restartDeployment: (cluster, ns, name) =>
+    ipcRenderer.invoke('restart-deployment', cluster, ns, name),
+  scaleDeployment: (cluster, ns, name, replicas) =>
+    ipcRenderer.invoke('scale-deployment', cluster, ns, name, replicas),
 });

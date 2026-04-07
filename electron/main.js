@@ -493,6 +493,42 @@ ipcMain.handle('describe-resource', async (_, cluster, kind, namespace, name) =>
   } catch (err) { return { error: err.message }; }
 });
 
+// ── Restart Deployment ──
+ipcMain.handle('restart-deployment', async (_, cluster, namespace, name) => {
+  try {
+    const kc = createK8sClient(cluster);
+    const apps = kc.makeApiClient(k8s.AppsV1Api);
+    const patch = {
+      spec: {
+        template: {
+          metadata: {
+            annotations: { 'kubectl.kubernetes.io/restartedAt': new Date().toISOString() }
+          }
+        }
+      }
+    };
+    await apps.patchNamespacedDeployment(name, namespace, patch,
+      undefined, undefined, undefined, undefined,
+      undefined, { headers: { 'Content-Type': 'application/strategic-merge-patch+json' } }
+    );
+    return { success: true };
+  } catch (err) { return { error: err.message }; }
+});
+
+// ── Scale Deployment ──
+ipcMain.handle('scale-deployment', async (_, cluster, namespace, name, replicas) => {
+  try {
+    const kc = createK8sClient(cluster);
+    const apps = kc.makeApiClient(k8s.AppsV1Api);
+    const patch = { spec: { replicas: parseInt(replicas) } };
+    await apps.patchNamespacedDeployment(name, namespace, patch,
+      undefined, undefined, undefined, undefined,
+      undefined, { headers: { 'Content-Type': 'application/strategic-merge-patch+json' } }
+    );
+    return { success: true };
+  } catch (err) { return { error: err.message }; }
+});
+
 // ── Window ──
 function createWindow() {
   mainWindow = new BrowserWindow({

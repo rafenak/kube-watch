@@ -5,6 +5,7 @@ import ClusterDashboard from './components/ClusterDashboard';
 import ResourceView from './components/ResourceView';
 import LogViewer from './components/LogViewer';
 import DescribePanel from './components/DescribePanel';
+import ToastContainer from './components/Toast';
 
 export default function App() {
   const [config, setConfig] = useState({ pollIntervalSeconds: 30, clusters: [] });
@@ -105,6 +106,7 @@ export default function App() {
           />
         )}
       </main>
+      <ToastContainer />
     </div>
   );
 }
