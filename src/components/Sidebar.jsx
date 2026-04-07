@@ -1,5 +1,3 @@
-import React from 'react';
-
 const RESOURCES = [
   { key: 'pods', icon: '⬡', label: 'Pods' },
   { key: 'deployments', icon: '⚙', label: 'Deployments' },
@@ -15,7 +13,7 @@ const RESOURCES = [
   { key: 'top-pods', icon: '📈', label: 'Top Pods' },
 ];
 
-export default function Sidebar({ clusters, selectedCluster, onSelectCluster, onNavigate, onConfig, currentPage, resourceType }) {
+export default function Sidebar({ clusters, selectedCluster, onSelectCluster, onNavigate, onConfig, onAbout, onThemeToggle, theme, currentPage, resourceType }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -25,6 +23,9 @@ export default function Sidebar({ clusters, selectedCluster, onSelectCluster, on
 
       <div className="sidebar-section">
         <div className="sidebar-section-title">Clusters</div>
+        {clusters.length === 0 && (
+          <span className="sidebar-empty">No clusters yet</span>
+        )}
         {clusters.map((c, i) => (
           <button
             key={i}
@@ -54,9 +55,17 @@ export default function Sidebar({ clusters, selectedCluster, onSelectCluster, on
       )}
 
       <div className="sidebar-footer">
+        <button className="sidebar-item" onClick={onThemeToggle} title="Toggle theme">
+          <span className="sidebar-icon">{theme === 'dark' ? '☀' : '🌙'}</span>
+          <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
         <button className={`sidebar-item ${currentPage === 'config' ? 'active' : ''}`} onClick={onConfig}>
           <span className="sidebar-icon">⚙</span>
           <span>Settings</span>
+        </button>
+        <button className={`sidebar-item ${currentPage === 'about' ? 'active' : ''}`} onClick={onAbout}>
+          <span className="sidebar-icon">ℹ</span>
+          <span>About</span>
         </button>
       </div>
     </aside>

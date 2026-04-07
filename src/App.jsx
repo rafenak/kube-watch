@@ -6,6 +6,7 @@ import ResourceView from './components/ResourceView';
 import LogViewer from './components/LogViewer';
 import DescribePanel from './components/DescribePanel';
 import ToastContainer from './components/Toast';
+import AboutPage from './components/AboutPage';
 
 export default function App() {
   const [config, setConfig] = useState({ pollIntervalSeconds: 30, clusters: [] });
@@ -17,6 +18,14 @@ export default function App() {
   const [clusterStatus, setClusterStatus] = useState({});
   const [logTarget, setLogTarget] = useState(null);
   const [describeTarget, setDescribeTarget] = useState(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   const loadConfig = useCallback(async () => {
     try {
@@ -63,6 +72,9 @@ export default function App() {
         onSelectCluster={onSelectCluster}
         onNavigate={onNavigate}
         onConfig={() => setPage('config')}
+        onAbout={() => setPage('about')}
+        onThemeToggle={toggleTheme}
+        theme={theme}
         currentPage={page}
         resourceType={resourceType}
       />
@@ -70,6 +82,7 @@ export default function App() {
         {page === 'loading' && (
           <div className="loading">Loading configuration…</div>
         )}
+        {page === 'about' && <AboutPage />}
         {page === 'config' && (
           <ConfigPage config={config} setConfig={setConfig} onDone={loadConfig} />
         )}
